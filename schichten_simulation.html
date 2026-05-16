@@ -1,0 +1,2634 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MiniNetz — Geführte Datenübertragung</title>
+
+<style>
+/* ============================================================
+   MiniNetz — Geführte Simulation einer Datenübertragung
+   Single-File-HTML · Klasse 11 · Rechnernetze
+   ============================================================ */
+
+:root {
+  --bg: #f5f4f0;
+  --bg2: #eceae4;
+  --surface: #ffffff;
+  --surface2: #fbfaf7;
+  --border: #d9d5ca;
+  --border2: #ebe7dd;
+
+  --ink: #1b1813;
+  --ink2: #4d4940;
+  --ink3: #7d786d;
+
+  --teal: #0e7c6a;
+  --teal-d: #07594d;
+  --teal-l: #e6f4f1;
+  --teal-m: #b8ded7;
+
+  --amber: #c96a00;
+  --amber-l: #fff3e3;
+  --amber-m: #ffd39f;
+
+  --red: #c13030;
+  --red-l: #fdeaea;
+  --red-m: #f4b9b9;
+
+  --green: #1a7a4a;
+  --green-l: #e8f8f0;
+  --green-m: #b8ddc8;
+
+  --violet: #6b3db5;
+  --violet-l: #f0eaff;
+  --violet-m: #d7c7ff;
+
+  --blue: #2563eb;
+  --blue-l: #eaf1ff;
+  --blue-m: #c7d8ff;
+
+  --r: 16px;
+  --r-lg: 24px;
+  --r-xl: 32px;
+
+  --shadow: 0 2px 8px rgba(20,18,12,.08), 0 12px 28px rgba(20,18,12,.06);
+  --shadow-lg: 0 10px 34px rgba(20,18,12,.11), 0 28px 58px rgba(20,18,12,.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { min-height: 100%; }
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(14,124,106,.10), transparent 34rem),
+    radial-gradient(circle at bottom right, rgba(107,61,181,.08), transparent 30rem),
+    var(--bg);
+  color: var(--ink);
+  line-height: 1.48;
+}
+
+button, input, select { font: inherit; }
+button { user-select: none; }
+
+.shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 310px minmax(0, 1fr);
+  grid-template-rows: 58px minmax(0, 1fr);
+  max-width: 1660px;
+  margin: 0 auto;
+}
+
+/* ============================================================
+   Topbar
+   ============================================================ */
+
+.topbar {
+  grid-column: 1 / -1;
+  background: var(--ink);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  gap: 18px;
+}
+
+.brand { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+
+.brand-main {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -.045em;
+  white-space: nowrap;
+}
+
+.brand-sub {
+  font-size: 11px;
+  font-weight: 700;
+  color: #aaa49b;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.top-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #dfdbd2;
+  letter-spacing: -.03em;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Sidebar
+   ============================================================ */
+
+.sidebar {
+  grid-row: 2;
+  background: rgba(255,255,255,.88);
+  border-right: 1px solid var(--border);
+  padding: 22px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  backdrop-filter: blur(12px);
+}
+
+.small-label {
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+
+.panel {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.panel-head {
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--border2);
+  background: var(--surface2);
+}
+
+.panel-title {
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: -.01em;
+}
+
+.panel-sub {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--ink3);
+  line-height: 1.35;
+}
+
+.form-body {
+  padding: 15px 16px 17px;
+  display: grid;
+  gap: 12px;
+}
+
+.field { display: grid; gap: 5px; }
+
+.field label {
+  color: var(--ink3);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .075em;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  color: var(--ink);
+  border-radius: 13px;
+  padding: 10px 11px;
+  outline: none;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: var(--teal-m);
+  box-shadow: 0 0 0 4px rgba(14,124,106,.10);
+}
+
+.control-row { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.control-row.two { grid-template-columns: 1fr 1fr; }
+
+.model-note {
+  background: var(--teal-l);
+  border: 1.5px solid var(--teal-m);
+  border-radius: var(--r-lg);
+  padding: 14px 15px;
+  color: var(--teal-d);
+  font-size: 12.8px;
+  line-height: 1.45;
+}
+.model-note strong {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  margin-bottom: 4px;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  color: var(--ink3);
+  line-height: 1.45;
+  font-size: 12px;
+  padding: 2px 4px;
+}
+
+/* ============================================================
+   Main / Stepper
+   ============================================================ */
+
+.main {
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.stepper {
+  height: 66px;
+  background: rgba(255,255,255,.92);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 30px;
+  gap: 2px;
+  overflow-x: auto;
+}
+
+.step-btn {
+  position: relative;
+  border: 0;
+  background: transparent;
+  color: var(--ink3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px 0 0;
+  margin-right: 10px;
+  min-width: max-content;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.step-btn:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  width: 18px;
+  height: 1.5px;
+  background: var(--border);
+}
+
+.step-num {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 900;
+  transition: all .16s ease;
+}
+
+.step-btn.active { color: var(--teal-d); }
+.step-btn.active .step-num { background: var(--teal); color: #fff; border-color: var(--teal); }
+.step-btn.done { color: var(--teal); }
+.step-btn.done .step-num { background: var(--teal-l); color: var(--teal-d); border-color: var(--teal); }
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 28px 32px 34px;
+}
+
+.step-page { display: none; }
+.step-page.visible { display: block; animation: fadeUp .22s ease both; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.bottom-nav {
+  min-height: 66px;
+  background: rgba(255,255,255,.93);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 30px;
+}
+
+.nav-spacer { flex: 1; }
+
+.progress-text {
+  color: var(--ink3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+
+/* ============================================================
+   Shared Components
+   ============================================================ */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 5px 11px;
+  margin-bottom: 10px;
+}
+
+.tag.teal { background: var(--teal-l); color: var(--teal-d); }
+.tag.amber { background: var(--amber-l); color: var(--amber); }
+.tag.violet { background: var(--violet-l); color: var(--violet); }
+.tag.red { background: var(--red-l); color: var(--red); }
+.tag.blue { background: var(--blue-l); color: var(--blue); }
+.tag.green { background: var(--green-l); color: var(--green); }
+
+h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(27px, 3vw, 40px);
+  line-height: 1.05;
+  letter-spacing: -.055em;
+  margin-bottom: 7px;
+}
+
+.lead {
+  color: var(--ink3);
+  max-width: 980px;
+  font-size: 14.5px;
+  margin-bottom: 22px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+}
+
+.card-pad { padding: 18px; }
+
+.btn {
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  padding: 10px 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-weight: 800;
+  font-size: 13px;
+  transition: transform .14s ease, background .14s ease, border-color .14s ease, color .14s ease;
+}
+
+.btn:hover { transform: translateY(-1px); }
+.btn:disabled { cursor: not-allowed; transform: none; opacity: .38; }
+
+.btn-primary { background: var(--teal); color: #fff; border-color: var(--teal); }
+.btn-primary:hover { background: var(--teal-d); border-color: var(--teal-d); }
+.btn-secondary { background: #fff; color: var(--ink2); border-color: var(--border); }
+.btn-secondary:hover { background: var(--bg); color: var(--ink); }
+.btn-ghost { background: transparent; color: var(--ink3); border-color: transparent; }
+.btn-ghost:hover { background: var(--bg); color: var(--ink); }
+
+.two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 410px;
+  gap: 20px;
+  align-items: start;
+}
+
+.canvas {
+  position: relative;
+  min-height: 432px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(14,124,106,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14,124,106,.045) 1px, transparent 1px),
+    var(--surface2);
+  background-size: 32px 32px;
+  box-shadow: var(--shadow);
+}
+
+.canvas svg { width: 100%; height: 432px; display: block; }
+
+.canvas-pill {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  background: rgba(255,255,255,.92);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 11px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--ink3);
+  backdrop-filter: blur(8px);
+}
+
+.info-stack { display: flex; flex-direction: column; gap: 14px; }
+
+.definition {
+  background: var(--ink);
+  color: #f4f1ea;
+  border-radius: var(--r-lg);
+  padding: 19px;
+  box-shadow: var(--shadow);
+}
+
+.definition .small-label { color: #9b9489; margin-bottom: 8px; }
+
+.definition-text {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.explainer {
+  margin-top: 11px;
+  background: rgba(255,255,255,.86);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 13px 14px;
+  color: var(--ink2);
+  font-size: 13.2px;
+  min-height: 62px;
+}
+
+.explainer strong {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 900;
+  color: var(--teal);
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  margin-bottom: 4px;
+}
+
+.focus-triad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.focus-box {
+  background: #fff;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r);
+  padding: 13px 14px;
+}
+
+.focus-box small {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  font-weight: 900;
+  color: var(--ink3);
+  margin-bottom: 5px;
+}
+
+.focus-box strong {
+  display: block;
+  color: var(--ink);
+  font-size: 13.6px;
+  line-height: 1.35;
+}
+
+.kp-list { display: grid; gap: 8px; }
+
+.kp {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 10px;
+  align-items: start;
+  background: #fff;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r);
+  padding: 12px 13px;
+}
+
+.kp-num {
+  width: 30px; height: 30px; border-radius: 10px;
+  display: grid; place-items: center;
+  background: var(--teal-l); color: var(--teal-d);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 900; font-size: 12px;
+}
+
+.kp-text { color: var(--ink2); font-size: 13.2px; }
+
+/* ============================================================
+   Step specific
+   ============================================================ */
+
+.bits-view {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.byte {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 13px;
+  padding: 8px 10px;
+  display: grid;
+  gap: 2px;
+  min-width: 78px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(20,18,12,.045);
+}
+
+.byte .char {
+  font-weight: 900;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.byte .bits {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.byte .code {
+  color: var(--ink3);
+  font-size: 10.5px;
+}
+
+.frame-visual { display: grid; gap: 12px; }
+
+.frame-shell {
+  border: 2px solid var(--blue-m);
+  background: #fff;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.frame-title {
+  background: var(--blue-l);
+  color: var(--blue);
+  padding: 11px 14px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  font-size: 11px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--blue-m);
+}
+
+.frame-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 9px;
+  padding: 12px;
+}
+
+.frame-field {
+  background: var(--surface2);
+  border: 1.5px solid var(--border2);
+  border-radius: 14px;
+  padding: 10px;
+  min-height: 68px;
+}
+
+.frame-field small {
+  display: block;
+  color: var(--ink3);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 5px;
+}
+
+.frame-field strong {
+  display: block;
+  color: var(--ink);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.payload-box {
+  margin: 0 12px 12px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border2);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.payload-box small {
+  display: block;
+  color: var(--ink3);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 7px;
+}
+
+.payload-bits {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--ink2);
+  font-weight: 800;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.data-card { padding: 17px; }
+
+.data-card h2 {
+  font-size: 14px;
+  margin-bottom: 7px;
+}
+
+.data-card p { color: var(--ink2); font-size: 13.4px; }
+
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.mini-stat {
+  background: var(--surface2);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r);
+  padding: 12px;
+}
+
+.mini-stat small {
+  display: block;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  color: var(--ink3);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.mini-stat strong {
+  display: block;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.status-card {
+  border-radius: var(--r-lg);
+  padding: 17px;
+  border: 1.5px solid;
+  box-shadow: var(--shadow);
+}
+
+.status-card.ok { background: var(--green-l); border-color: var(--green-m); color: var(--green); }
+.status-card.warn { background: var(--amber-l); border-color: var(--amber-m); color: var(--amber); }
+.status-card.fail { background: var(--red-l); border-color: var(--red-m); color: var(--red); }
+.status-card.neutral { background: var(--violet-l); border-color: var(--violet-m); color: var(--violet); }
+.status-card strong { display: block; font-size: 15px; margin-bottom: 4px; }
+.status-card span { display: block; color: var(--ink2); font-size: 13px; }
+
+.device-list { display: grid; gap: 8px; }
+
+.device-row {
+  display: grid;
+  grid-template-columns: 86px 1fr;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border2);
+  background: #fff;
+}
+
+.device-row.accept { background: var(--green-l); border-color: var(--green-m); }
+.device-row.ignore { background: var(--surface2); }
+.device-row.sender { background: var(--blue-l); border-color: var(--blue-m); }
+.device-row strong { font-size: 12.5px; }
+.device-row span { color: var(--ink3); font-size: 12.2px; }
+
+.quiz-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.quiz-card {
+  border: 1.5px solid var(--border);
+  background: #fff;
+  border-radius: var(--r-lg);
+  padding: 15px;
+  cursor: pointer;
+  transition: transform .14s ease, border-color .14s ease, background .14s ease;
+}
+
+.quiz-card:hover { transform: translateY(-1px); border-color: var(--teal-m); background: var(--teal-l); }
+.quiz-card strong { display: block; margin-bottom: 4px; }
+.quiz-card span { color: var(--ink3); font-size: 13px; }
+.quiz-card.good { background: var(--green-l); border-color: var(--green-m); }
+.quiz-card.bad { background: var(--red-l); border-color: var(--red-m); }
+
+.memo-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.memo-box {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.memo-head {
+  padding: 15px 17px;
+  background: var(--ink);
+  color: #fff;
+}
+
+.memo-head h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
+  letter-spacing: -.04em;
+}
+
+.memo-body {
+  padding: 17px;
+  display: grid;
+  gap: 12px;
+}
+
+.layer-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r);
+  padding: 12px;
+}
+
+.layer-row strong {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.layer-row span {
+  font-size: 13px;
+  color: var(--ink2);
+}
+
+.memo-flow {
+  display: grid;
+  gap: 8px;
+  counter-reset: flow;
+}
+
+.flow-step {
+  counter-increment: flow;
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 10px;
+  align-items: start;
+  background: var(--surface2);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r);
+  padding: 10px 12px;
+}
+
+.flow-step::before {
+  content: counter(flow);
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--teal-l);
+  color: var(--teal-d);
+  font-weight: 900;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.flow-step strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.flow-step span {
+  display: block;
+  font-size: 12.8px;
+  color: var(--ink2);
+}
+
+/* ============================================================
+   SVG
+   ============================================================ */
+
+.link {
+  stroke: #c8c3b8;
+  stroke-width: 5.5;
+  stroke-linecap: round;
+  transition: opacity .18s ease, stroke .18s ease, stroke-width .18s ease;
+}
+
+.link.active { stroke: var(--teal); stroke-width: 8; filter: drop-shadow(0 3px 7px rgba(14,124,106,.27)); }
+.link.signal { stroke-dasharray: 12 10; animation: dash 1.4s linear infinite; }
+.link.dim { opacity: .22; }
+
+@keyframes dash { to { stroke-dashoffset: -44; } }
+
+.node-shape { transition: fill .18s ease, stroke .18s ease, stroke-width .18s ease, filter .18s ease; }
+
+.node.active .node-shape,
+.node.selected .node-shape {
+  stroke: var(--teal) !important;
+  stroke-width: 3.5 !important;
+  filter: drop-shadow(0 7px 14px rgba(14,124,106,.20));
+}
+
+.node.accept .node-shape { fill: #d5f5e6 !important; stroke: var(--green) !important; stroke-width: 3.5 !important; }
+.node.fail .node-shape { fill: var(--red-l) !important; stroke: var(--red) !important; stroke-width: 3.5 !important; }
+.node.ignore .node-shape { opacity: .42; }
+
+.node-label {
+  font-size: 13px;
+  font-weight: 900;
+  fill: var(--ink);
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.node-sub {
+  font-size: 10.5px;
+  font-weight: 650;
+  fill: var(--ink3);
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.node-icon {
+  font-size: 15px;
+  font-weight: 900;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.packet rect {
+  fill: #fff;
+  stroke: var(--teal);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 8px 16px rgba(14,124,106,.22));
+}
+
+.packet text {
+  font-size: 11px;
+  font-weight: 900;
+  fill: var(--teal-d);
+  text-anchor: middle;
+}
+
+.packet.error rect { stroke: var(--red); fill: var(--red-l); }
+.packet.error text { fill: var(--red); }
+
+.bit-dot {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 900;
+  text-anchor: middle;
+}
+
+/* ============================================================
+   Responsive / Print
+   ============================================================ */
+
+@media (max-width: 1180px) {
+  .two-col,
+  .memo-grid { grid-template-columns: 1fr; }
+  .info-stack { max-width: 900px; }
+  .focus-triad { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .topbar { padding: 0 16px; }
+  .brand-sub { display: none; }
+  .top-title { font-size: 14px; }
+  .content { padding: 18px 16px 24px; }
+  .stepper { padding: 0 16px; }
+  .bottom-nav { padding: 12px 16px; }
+  .data-grid, .quiz-grid, .frame-grid, .layer-row { grid-template-columns: 1fr; }
+}
+
+@media print {
+  body { background: #fff !important; }
+  .shell { display: block; }
+  .topbar, .sidebar, .stepper, .bottom-nav { display: none !important; }
+  .content { padding: 0; overflow: visible; }
+  .step-page { display: none !important; }
+  #step8 { display: block !important; }
+  .card, .frame-shell, .status-card, .memo-box { box-shadow: none !important; }
+}
+</style>
+</head>
+
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-main">MiniNetz</div>
+      <div class="brand-sub">Klasse 11 · Rechnernetze</div>
+    </div>
+    <div class="top-title" id="topTitle">Geführte Datenübertragung</div>
+  </header>
+
+  <aside class="sidebar">
+    <section class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Simulation einstellen</div>
+        <div class="panel-sub">Eine eigene Nachricht eingeben und den Übertragungsweg untersuchen.</div>
+      </div>
+
+      <div class="form-body">
+        <div class="field">
+          <label for="senderSelect">Absender</label>
+          <select id="senderSelect"></select>
+        </div>
+
+        <div class="field">
+          <label for="receiverSelect">Empfänger</label>
+          <select id="receiverSelect"></select>
+        </div>
+
+        <div class="field">
+          <label for="messageInput">Nachricht</label>
+          <input id="messageInput" value="Hallo Netz" maxlength="26" />
+        </div>
+
+        <div class="field">
+          <label for="mediumSelect">Medium</label>
+          <select id="mediumSelect"></select>
+        </div>
+
+        <div class="field">
+          <label for="disturbanceSelect">Störung</label>
+          <select id="disturbanceSelect">
+            <option>Keine Störung</option>
+            <option>Gezielte Störung</option>
+            <option>Zufällig je nach Medium</option>
+          </select>
+        </div>
+
+        <div class="control-row">
+          <button class="btn btn-primary" id="prepareBtn" type="button">Simulation übernehmen</button>
+        </div>
+
+        <div class="control-row">
+          <button class="btn btn-ghost" id="resetBtn" type="button">Zurücksetzen</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="model-note">
+      <strong>Didaktisches Modell</strong>
+      Die App zeigt nicht „das Internet vollständig“, sondern einen klar begrenzten Ablauf: Nachricht → Bits → Rahmen → Medium → Adresse → Prüfsumme → Text.
+    </div>
+
+    <div class="model-note" style="background: var(--amber-l); border-color: var(--amber-m); color: var(--amber);">
+      <strong>Unterrichtsfokus</strong>
+      Die zentrale Frage lautet: Welche Aufgabe übernimmt welcher Schritt, damit aus einer Nachricht eine zuverlässig verarbeitbare Datenübertragung wird?
+    </div>
+
+    <div class="sidebar-footer">
+      Tipp: Erst mit „Keine Störung“ durchgehen, danach dieselbe Nachricht mit „Gezielte Störung“ erneut untersuchen.
+    </div>
+  </aside>
+
+  <main class="main">
+    <nav class="stepper" id="stepper"></nav>
+
+    <section class="content">
+      <div class="step-page visible" id="step0"></div>
+      <div class="step-page" id="step1"></div>
+      <div class="step-page" id="step2"></div>
+      <div class="step-page" id="step3"></div>
+      <div class="step-page" id="step4"></div>
+      <div class="step-page" id="step5"></div>
+      <div class="step-page" id="step6"></div>
+      <div class="step-page" id="step7"></div>
+      <div class="step-page" id="step8"></div>
+    </section>
+
+    <footer class="bottom-nav">
+      <button class="btn btn-secondary" id="prevButton" type="button">← Zurück</button>
+      <button class="btn btn-ghost" id="restartButton" type="button">Zum Start</button>
+      <div class="nav-spacer"></div>
+      <span class="progress-text" id="progressText">Schritt 1 von 9</span>
+      <div class="nav-spacer"></div>
+      <button class="btn btn-primary" id="nextButton" type="button">Weiter →</button>
+    </footer>
+  </main>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   Datenmodell
+   ============================================================ */
+
+const DEVICES = ["PC-A", "PC-B", "SERVER-B", "TABLET-C", "DRUCKER-D"];
+
+const MEDIA = {
+  "Kabel": {
+    signal: "elektrische Signale",
+    description: "Kabel sind im Modell recht störungsarm und gut für stabile Verbindungen geeignet.",
+    errorProbability: 0.02
+  },
+  "Funk": {
+    signal: "elektromagnetische Wellen",
+    description: "Funk ist flexibel, aber im Modell anfälliger für Störungen.",
+    errorProbability: 0.12
+  },
+  "Glasfaser": {
+    signal: "Lichtimpulse",
+    description: "Glasfaser ist im Modell sehr störungsarm und für hohe Datenraten geeignet.",
+    errorProbability: 0.005
+  }
+};
+
+const STEPS = [
+  ["Nachricht", "Eine Nachricht entsteht"],
+  ["Codierung", "Text wird zu Bits"],
+  ["Rahmen", "Zusatzinformationen kommen dazu"],
+  ["Medium", "Signale laufen über ein Medium"],
+  ["Adresse", "Geräte prüfen den Empfänger"],
+  ["Prüfung", "Prüfsumme erkennt Veränderungen"],
+  ["Decodierung", "Bits werden wieder Text"],
+  ["Ergebnis", "Der Ablauf wird bewertet"],
+  ["Merkkasten", "Kompakte Hefter-Sicherung"]
+];
+
+const POS = {
+  "PC-A":      { x: 120, y: 190, type: "pc",      sub: "Client" },
+  "PC-B":      { x: 305, y: 84,  type: "pc",      sub: "Client" },
+  "SERVER-B":  { x: 725, y: 190, type: "server",  sub: "Dienst" },
+  "TABLET-C":  { x: 305, y: 348, type: "tablet",  sub: "mobil" },
+  "DRUCKER-D": { x: 725, y: 348, type: "printer", sub: "Dienst" },
+  "SWITCH":    { x: 505, y: 216, type: "switch",  sub: "vermittelt" }
+};
+
+const LINKS = [
+  ["PC-A", "SWITCH"],
+  ["PC-B", "SWITCH"],
+  ["SERVER-B", "SWITCH"],
+  ["TABLET-C", "SWITCH"],
+  ["DRUCKER-D", "SWITCH"]
+];
+
+const state = {
+  step: 0,
+  prepared: false,
+
+  sender: "PC-A",
+  receiver: "SERVER-B",
+  message: "Hallo Netz",
+  mediumName: "Kabel",
+  disturbanceMode: "Keine Störung",
+
+  payloadBits: "",
+  encodingRows: [],
+  originalFrame: null,
+  transmittedFrame: null,
+  disturbanceInfo: null,
+  checkResult: null,
+  decodedText: "",
+  decodingRows: [],
+  quizAnswered: false
+};
+
+/* ============================================================
+   Hilfsfunktionen
+   ============================================================ */
+
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+
+function esc(text) {
+  return String(text)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function clone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+function shorten(text, maxLength) {
+  if (String(text).length <= maxLength) return String(text);
+  return String(text).slice(0, maxLength) + " …";
+}
+
+function groupedBits(bits) {
+  const groups = [];
+  for (let i = 0; i < bits.length; i += 8) groups.push(bits.slice(i, i + 8));
+  return groups.join(" ");
+}
+
+function encodeTextToBits(text) {
+  let bitsTotal = "";
+  const rows = [];
+
+  for (const originalChar of text) {
+    let char = originalChar;
+    let code = originalChar.codePointAt(0);
+    let note = "";
+
+    if (code > 255) {
+      char = "?";
+      code = "?".charCodeAt(0);
+      note = `${originalChar} wurde im Modell durch ? ersetzt.`;
+    }
+
+    const bits = code.toString(2).padStart(8, "0");
+    bitsTotal += bits;
+    rows.push({ char, code, bits, note });
+  }
+
+  return { bitsTotal, rows };
+}
+
+function decodeBitsToText(bits) {
+  let text = "";
+  const rows = [];
+
+  for (let i = 0; i < bits.length; i += 8) {
+    const byte = bits.slice(i, i + 8);
+
+    if (byte.length < 8) {
+      rows.push({ bits: byte, code: "-", char: "-", note: "unvollständiges Byte" });
+      continue;
+    }
+
+    const code = parseInt(byte, 2);
+    const char = String.fromCharCode(code);
+    text += char;
+    rows.push({ bits: byte, code, char, note: "" });
+  }
+
+  return { text, rows };
+}
+
+function calculateChecksum(bits) {
+  return bits.split("").filter(bit => bit === "1").length;
+}
+
+function createFrame(sender, receiver, payloadBits) {
+  return {
+    type: "DATEN",
+    sender,
+    receiver,
+    length: payloadBits.length,
+    payloadBits,
+    checksum: calculateChecksum(payloadBits)
+  };
+}
+
+function disturbOneBit(bits) {
+  if (!bits.length) return { disturbedBits: bits, info: null };
+
+  const position = Math.floor(Math.random() * bits.length);
+  const oldBit = bits[position];
+  const newBit = oldBit === "0" ? "1" : "0";
+
+  const disturbedBits = bits.slice(0, position) + newBit + bits.slice(position + 1);
+  return { disturbedBits, info: { position, oldBit, newBit } };
+}
+
+function checkFrame(frame) {
+  const newChecksum = calculateChecksum(frame.payloadBits);
+  return {
+    ok: newChecksum === frame.checksum,
+    sentChecksum: frame.checksum,
+    newChecksum
+  };
+}
+
+function routeLinks() {
+  return new Set([
+    `${state.sender}|SWITCH`,
+    `SWITCH|${state.sender}`,
+    `${state.receiver}|SWITCH`,
+    `SWITCH|${state.receiver}`
+  ]);
+}
+
+function linkKey(a, b) {
+  return `${a}|${b}`;
+}
+
+function currentMedium() {
+  return MEDIA[state.mediumName];
+}
+
+/* ============================================================
+   Initialisierung
+   ============================================================ */
+
+document.addEventListener("DOMContentLoaded", init);
+
+function init() {
+  fillSelects();
+  renderStepper();
+  wireControls();
+  prepareSimulation();
+  goStep(0);
+}
+
+function fillSelects() {
+  const sender = $("#senderSelect");
+  const receiver = $("#receiverSelect");
+  const medium = $("#mediumSelect");
+
+  sender.innerHTML = DEVICES.map(d => `<option>${esc(d)}</option>`).join("");
+  receiver.innerHTML = DEVICES.map(d => `<option>${esc(d)}</option>`).join("");
+  medium.innerHTML = Object.keys(MEDIA).map(m => `<option>${esc(m)}</option>`).join("");
+
+  sender.value = state.sender;
+  receiver.value = state.receiver;
+  medium.value = state.mediumName;
+  $("#disturbanceSelect").value = state.disturbanceMode;
+}
+
+function renderStepper() {
+  const stepper = $("#stepper");
+  stepper.innerHTML = STEPS.map((s, i) => `
+    <button class="step-btn" data-step="${i}" type="button" title="${esc(s[1])}">
+      <span class="step-num">${i + 1}</span>
+      <span>${esc(s[0])}</span>
+    </button>
+  `).join("");
+
+  $$(".step-btn").forEach(btn => {
+    btn.addEventListener("click", () => goStep(Number(btn.dataset.step)));
+  });
+}
+
+function wireControls() {
+  $("#prepareBtn").addEventListener("click", () => {
+    prepareSimulation();
+    goStep(0);
+  });
+
+  $("#resetBtn").addEventListener("click", () => {
+    $("#senderSelect").value = "PC-A";
+    $("#receiverSelect").value = "SERVER-B";
+    $("#messageInput").value = "Hallo Netz";
+    $("#mediumSelect").value = "Kabel";
+    $("#disturbanceSelect").value = "Keine Störung";
+    prepareSimulation();
+    goStep(0);
+  });
+
+  $("#prevButton").addEventListener("click", () => goStep(state.step - 1));
+  $("#nextButton").addEventListener("click", () => goStep(state.step + 1));
+  $("#restartButton").addEventListener("click", () => goStep(0));
+
+  ["#senderSelect", "#receiverSelect", "#messageInput", "#mediumSelect", "#disturbanceSelect"].forEach(sel => {
+    $(sel).addEventListener("change", () => prepareSimulation(false));
+    $(sel).addEventListener("input", () => prepareSimulation(false));
+  });
+}
+
+/* ============================================================
+   Simulation vorbereiten
+   ============================================================ */
+
+function prepareSimulation(showWarnings = true) {
+  const sender = $("#senderSelect").value;
+  const receiver = $("#receiverSelect").value;
+  const message = $("#messageInput").value.trim() || "Hallo Netz";
+  const mediumName = $("#mediumSelect").value;
+  const disturbanceMode = $("#disturbanceSelect").value;
+
+  if (sender === receiver && showWarnings) {
+    alert("Absender und Empfänger sollten verschieden sein. Ich setze den Empfänger automatisch auf ein anderes Gerät.");
+  }
+
+  state.sender = sender;
+  state.receiver = sender === receiver ? DEVICES.find(d => d !== sender) : receiver;
+  state.message = message;
+  state.mediumName = mediumName;
+  state.disturbanceMode = disturbanceMode;
+
+  $("#receiverSelect").value = state.receiver;
+
+  const encoded = encodeTextToBits(message);
+  state.payloadBits = encoded.bitsTotal;
+  state.encodingRows = encoded.rows;
+
+  state.originalFrame = createFrame(state.sender, state.receiver, state.payloadBits);
+  state.transmittedFrame = clone(state.originalFrame);
+
+  state.disturbanceInfo = null;
+  state.checkResult = null;
+  state.decodedText = "";
+  state.decodingRows = [];
+  state.quizAnswered = false;
+  state.prepared = true;
+
+  applyDisturbanceIfNeeded();
+
+  state.checkResult = checkFrame(state.transmittedFrame);
+
+  if (state.checkResult.ok) {
+    const decoded = decodeBitsToText(state.transmittedFrame.payloadBits);
+    state.decodedText = decoded.text;
+    state.decodingRows = decoded.rows;
+  }
+
+  renderAll();
+}
+
+function applyDisturbanceIfNeeded() {
+  const medium = currentMedium();
+  let shouldDisturb = false;
+
+  if (state.disturbanceMode === "Gezielte Störung") shouldDisturb = true;
+
+  if (state.disturbanceMode === "Zufällig je nach Medium") {
+    shouldDisturb = Math.random() < medium.errorProbability;
+  }
+
+  if (shouldDisturb) {
+    const disturbed = disturbOneBit(state.transmittedFrame.payloadBits);
+    state.transmittedFrame.payloadBits = disturbed.disturbedBits;
+    state.disturbanceInfo = disturbed.info;
+  }
+}
+
+/* ============================================================
+   Navigation
+   ============================================================ */
+
+function goStep(next) {
+  if (next < 0 || next > STEPS.length - 1) return;
+  state.step = next;
+  renderAll();
+  showStep();
+}
+
+function showStep() {
+  $$(".step-page").forEach((page, i) => {
+    page.classList.toggle("visible", i === state.step);
+  });
+
+  $$(".step-btn").forEach((btn, i) => {
+    btn.classList.toggle("active", i === state.step);
+    btn.classList.toggle("done", i < state.step);
+    btn.querySelector(".step-num").textContent = i < state.step ? "✓" : String(i + 1);
+  });
+
+  $("#prevButton").disabled = state.step === 0;
+  $("#nextButton").disabled = state.step === STEPS.length - 1;
+  $("#progressText").textContent = `Schritt ${state.step + 1} von ${STEPS.length}`;
+}
+
+/* ============================================================
+   Render Pages
+   ============================================================ */
+
+function renderAll() {
+  renderStep0();
+  renderStep1();
+  renderStep2();
+  renderStep3();
+  renderStep4();
+  renderStep5();
+  renderStep6();
+  renderStep7();
+  renderStep8();
+}
+
+function renderFocusTriad(what, why, key) {
+  return `
+    <div class="focus-triad">
+      <div class="focus-box">
+        <small>Was passiert?</small>
+        <strong>${esc(what)}</strong>
+      </div>
+      <div class="focus-box">
+        <small>Warum?</small>
+        <strong>${esc(why)}</strong>
+      </div>
+      <div class="focus-box">
+        <small>Merke</small>
+        <strong>${esc(key)}</strong>
+      </div>
+    </div>
+  `;
+}
+
+function renderStep0() {
+  $("#step0").innerHTML = `
+    <div class="tag teal">Schritt 1 · Ausgangspunkt</div>
+    <h1>Eine Nachricht soll gesendet werden</h1>
+    <p class="lead">Am Anfang steht noch keine technische Übertragung, sondern eine einfache Kommunikationsabsicht: Ein Gerät hat eine Nachricht, ein anderes Gerät soll sie erhalten.</p>
+
+    ${renderFocusTriad(
+      `${state.sender} möchte „${state.message}“ an ${state.receiver} senden.`,
+      "Das Netz muss später wissen, welche Daten wohin gehören.",
+      "Noch ist die Nachricht menschlich lesbar, aber nicht als Bitfolge vorbereitet."
+    )}
+
+    <div class="two-col">
+      <div>
+        <div class="canvas">
+          <svg id="svg0" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="canvas-pill">Ausgangslage</div>
+        </div>
+        <div class="explainer">
+          <strong>Beobachtung</strong>
+          In diesem Schritt geht es nur um drei Fragen: Wer sendet? Wer empfängt? Welche Nachricht soll übertragen werden?
+        </div>
+      </div>
+
+      <div class="info-stack">
+        <div class="definition">
+          <div class="small-label">Leitidee</div>
+          <div class="definition-text">Menschen lesen Zeichen. Rechnernetze übertragen Zustände, die als Folgen von 0 und 1 modelliert werden können.</div>
+        </div>
+
+        <div class="card data-card">
+          <h2>Startdaten</h2>
+          <p>Diese Informationen werden im weiteren Ablauf Schritt für Schritt technisch nutzbar gemacht.</p>
+          <div class="data-grid">
+            <div class="mini-stat"><small>Absender</small><strong>${esc(state.sender)}</strong></div>
+            <div class="mini-stat"><small>Empfänger</small><strong>${esc(state.receiver)}</strong></div>
+            <div class="mini-stat"><small>Nachricht</small><strong>„${esc(state.message)}“</strong></div>
+            <div class="mini-stat"><small>Medium</small><strong>${esc(state.mediumName)}</strong></div>
+          </div>
+        </div>
+
+        <div class="status-card neutral">
+          <strong>Warum die App schrittweise arbeitet</strong>
+          <span>Nachricht, Codierung, Adressierung, Übertragung und Prüfung sind verschiedene Aufgaben. Sie werden deshalb nacheinander sichtbar gemacht.</span>
+        </div>
+      </div>
+    </div>
+  `;
+  drawNetwork("svg0", { mode: "message" });
+}
+
+function renderStep1() {
+  $("#step1").innerHTML = `
+    <div class="tag blue">Schritt 2 · Codierung</div>
+    <h1>Text wird zu Bits</h1>
+    <p class="lead">Damit Rechner mit der Nachricht arbeiten können, wird jedes Zeichen nach einer festen Regel in eine Zahl und anschließend in eine 8-Bit-Gruppe übersetzt.</p>
+
+    ${renderFocusTriad(
+      "Jedes Zeichen wird als Zahl und dann als 8-Bit-Folge dargestellt.",
+      "Netze übertragen keine Buchstaben als Buchstaben, sondern technische Zustände.",
+      "Sender und Empfänger müssen dieselbe Codierungsregel verwenden."
+    )}
+
+    <div class="two-col">
+      <div>
+        <div class="canvas">
+          <svg id="svg1" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="canvas-pill">Zeichen → Zahl → Bits</div>
+        </div>
+
+        <div class="bits-view">
+          ${renderByteCards(state.encodingRows)}
+        </div>
+      </div>
+
+      <div class="info-stack">
+        <div class="definition">
+          <div class="small-label">Codierung</div>
+          <div class="definition-text">Eine Codierung ordnet Zeichen nach einer vereinbarten Regel Zahlen und Bitmustern zu.</div>
+        </div>
+
+        <div class="card data-card">
+          <h2>Datenblick</h2>
+          <p>Die Nachricht <strong>„${esc(state.message)}“</strong> besteht hier aus ${state.encodingRows.length} Zeichen.</p>
+          <div class="data-grid">
+            <div class="mini-stat"><small>Bitlänge</small><strong>${state.payloadBits.length} Bit</strong></div>
+            <div class="mini-stat"><small>Byte-Anzahl</small><strong>${state.encodingRows.length}</strong></div>
+          </div>
+        </div>
+
+        <div class="status-card neutral">
+          <strong>Fachlicher Hinweis</strong>
+          <span>Das Modell verwendet bewusst einfache 8-Bit-Zeichen. Echte Systeme nutzen je nach Kontext zum Beispiel UTF-8, wobei Zeichen unterschiedlich viele Bytes benötigen können.</span>
+        </div>
+      </div>
+    </div>
+  `;
+  drawEncoding("svg1");
+}
+
+function renderStep2() {
+  $("#step2").innerHTML = `
+    <div class="tag violet">Schritt 3 · Rahmen</div>
+    <h1>Die Bits werden in einen Rahmen gelegt</h1>
+    <p class="lead">Die Nutzdaten allein reichen nicht aus. Ein Netz benötigt zusätzliche Informationen, damit die Daten zugeordnet, geprüft und weiterverarbeitet werden können.</p>
+
+    ${renderFocusTriad(
+      "Zu den Nutzdaten kommen Absender, Empfänger, Länge und Prüfsumme.",
+      "Ohne Zusatzinformationen wüsste das Netz nicht zuverlässig, wohin die Daten gehören.",
+      "Ein Rahmen bündelt Nutzdaten und Steuerinformationen."
+    )}
+
+    <div class="two-col">
+      <div class="frame-visual">
+        ${renderFrame(state.originalFrame)}
+        <div class="explainer">
+          <strong>Warum „Rahmen“?</strong>
+          In diesem Unterrichtsmodell werden Nutzdaten zusammen mit Zusatzinformationen betrachtet. In echten Netzen hängen die Bezeichnungen von der Schicht ab: Frame, Paket oder Segment.
+        </div>
+      </div>
+
+      <div class="info-stack">
+        <div class="definition">
+          <div class="small-label">Modellrahmen</div>
+          <div class="definition-text">Ein Rahmen enthält Nutzdaten und Steuerinformationen, damit die Daten adressiert, geprüft und weiterverarbeitet werden können.</div>
+        </div>
+
+        <div class="kp-list">
+          <div class="kp"><div class="kp-num">1</div><div class="kp-text">Die Nutzdaten sind die eigentliche Nachricht in Bitform.</div></div>
+          <div class="kp"><div class="kp-num">2</div><div class="kp-text">Die Empfängerangabe entscheidet später, welches Gerät den Rahmen annimmt.</div></div>
+          <div class="kp"><div class="kp-num">3</div><div class="kp-text">Die Prüfsumme ist eine einfache Modellidee, um Veränderungen an Bits sichtbar zu machen.</div></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderStep3() {
+  const medium = currentMedium();
+
+  const disturbanceText = state.disturbanceInfo
+    ? `Ein Bit wurde verändert: Position ${state.disturbanceInfo.position}, ${state.disturbanceInfo.oldBit} → ${state.disturbanceInfo.newBit}.`
+    : state.disturbanceMode === "Zufällig je nach Medium"
+      ? `In diesem Durchlauf ist keine Störung aufgetreten. Modellwahrscheinlichkeit: ${(medium.errorProbability * 100).toFixed(1)} %.`
+      : "Die Nutzdaten wurden in diesem Durchlauf nicht verändert.";
+
+  $("#step3").innerHTML = `
+    <div class="tag amber">Schritt 4 · Übertragungsmedium</div>
+    <h1>Der Rahmen wird als Signal übertragen</h1>
+    <p class="lead">Die Bits liegen nicht einfach „im Kabel“. Sie werden über ein Medium als technische Signale übertragen, zum Beispiel elektrisch, per Funk oder als Lichtimpulse.</p>
+
+    ${renderFocusTriad(
+      `Der Rahmen läuft über ${state.mediumName} als ${medium.signal}.`,
+      "Daten müssen physisch oder drahtlos von einem Ort zum anderen gelangen.",
+      "Ein Medium transportiert Signale, kann sie aber auch stören."
+    )}
+
+    <div class="two-col">
+      <div>
+        <div class="canvas">
+          <svg id="svg3" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="canvas-pill">${esc(state.mediumName)} · ${esc(medium.signal)}</div>
+        </div>
+
+        <div class="explainer">
+          <strong>Wichtig</strong>
+          Der mitgesendete Prüfsummenwert bleibt unverändert. Wenn unterwegs ein Bit kippt, passt die später neu berechnete Prüfsumme nicht mehr zum ursprünglichen Wert.
+        </div>
+      </div>
+
+      <div class="info-stack">
+        <div class="status-card ${state.disturbanceInfo ? "fail" : "ok"}">
+          <strong>${state.disturbanceInfo ? "Störung eingebaut" : "Keine Veränderung erkannt"}</strong>
+          <span>${esc(disturbanceText)}</span>
+        </div>
+
+        <div class="card data-card">
+          <h2>Medium</h2>
+          <p>${esc(medium.description)}</p>
+          <div class="data-grid">
+            <div class="mini-stat"><small>Signal</small><strong>${esc(medium.signal)}</strong></div>
+            <div class="mini-stat"><small>Modellrisiko</small><strong>${(medium.errorProbability * 100).toFixed(1)} %</strong></div>
+          </div>
+        </div>
+
+        <div class="card data-card">
+          <h2>Bitstrom nach der Übertragung</h2>
+          <p class="payload-bits">${esc(shorten(groupedBits(state.transmittedFrame.payloadBits), 340))}</p>
+        </div>
+      </div>
+    </div>
+  `;
+  drawNetwork("svg3", { mode: "transmission" });
+}
+
+function renderStep4() {
+  $("#step4").innerHTML = `
+    <div class="tag teal">Schritt 5 · Adressierung</div>
+    <h1>Die Geräte prüfen den Empfänger</h1>
+    <p class="lead">In einem Netz sind mehrere Geräte verbunden. Trotzdem soll nicht jedes Gerät jede Nachricht verarbeiten. Die Empfängerangabe im Rahmen entscheidet, welches Gerät zuständig ist.</p>
+
+    ${renderFocusTriad(
+      `Alle Geräte können im Modell beteiligt sein, aber nur ${state.receiver} ist gemeint.`,
+      "Daten müssen einem Zielgerät zugeordnet werden.",
+      "Adressierung trennt „Signal kommt vorbei“ von „Nachricht ist für mich“."
+    )}
+
+    <div class="two-col">
+      <div>
+        <div class="canvas">
+          <svg id="svg4" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="canvas-pill">Empfänger = ${esc(state.receiver)}</div>
+        </div>
+
+        <div class="explainer">
+          <strong>Adressierung</strong>
+          Nur das Gerät, dessen Adresse zur Empfängerangabe passt, verarbeitet den Rahmen weiter. Andere Geräte ignorieren ihn.
+        </div>
+      </div>
+
+      <div class="info-stack">
+        <div class="definition">
+          <div class="small-label">Grundidee</div>
+          <div class="definition-text">Adressierung sorgt dafür, dass Daten einem bestimmten Zielgerät zugeordnet werden können.</div>
+        </div>
+
+        <div class="card data-card">
+          <h2>Geräteentscheidung</h2>
+          <div class="device-list">
+            ${DEVICES.map(d => renderDeviceDecision(d)).join("")}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  drawNetwork("svg4", { mode: "addressing" });
+}
+
+function renderStep5() {
+  const ok = state.checkResult.ok;
+
+  $("#step5").innerHTML = `
+    <div class="tag ${ok ? "teal" : "red"}">Schritt 6 · Fehlerprüfung</div>
+    <h1>${ok ? "Die Prüfsumme stimmt" : "Die Prüfsumme stimmt nicht"}</h1>
+    <p class="lead">Der Empfänger berechnet aus den empfangenen Nutzdaten die Prüfsumme neu und vergleicht sie mit der mitgesendeten Prüfsumme.</p>
+
+    ${renderFocusTriad(
+      "Der Empfänger vergleicht zwei Werte: mitgesendet und neu berechnet.",
+      "So kann eine Veränderung an den Nutzdaten erkannt werden.",
+      ok ? "Die Daten wirken unverändert." : "Der Rahmen wird verworfen, statt beschädigte Daten zu nutzen."
+    )}
+
+    <div class="two-col">
+      <div>
+        <div class="canvas">
+          <svg id="svg5" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="canvas-pill">Prüfsumme vergleichen</div>
+        </div>
+
+        <div class="explainer">
+          <strong>Modellgrenze</strong>
+          Diese Prüfsumme zählt nur die Einsen. Sie ist didaktisch leicht verständlich, aber keine professionelle Fehlerprüfung.
+        </div>
+      </div>
+
+      <div class="info-stack">
+        <div class="status-card ${ok ? "ok" : "fail"}">
+          <strong>${ok ? "OK — kein Fehler erkannt" : "Fehler erkannt — Rahmen wird verworfen"}</strong>
+          <span>${ok ? "Die neu berechnete Prüfsumme passt zum mitgesendeten Wert." : "Die neu berechnete Prüfsumme passt nicht zum mitgesendeten Wert."}</span>
+        </div>
+
+        <div class="card data-card">
+          <h2>Vergleich</h2>
+          <div class="data-grid">
+            <div class="mini-stat"><small>Mitgesendet</small><strong>${state.checkResult.sentChecksum}</strong></div>
+            <div class="mini-stat"><small>Neu berechnet</small><strong>${state.checkResult.newChecksum}</strong></div>
+          </div>
+        </div>
+
+        <div class="kp-list">
+          <div class="kp"><div class="kp-num">1</div><div class="kp-text">Sender berechnet die Prüfsumme vor dem Senden.</div></div>
+          <div class="kp"><div class="kp-num">2</div><div class="kp-text">Empfänger berechnet sie nach dem Empfang neu.</div></div>
+          <div class="kp"><div class="kp-num">3</div><div class="kp-text">Unterschiedliche Werte zeigen im Modell: Die Nutzdaten wurden verändert.</div></div>
+        </div>
+      </div>
+    </div>
+  `;
+  drawChecksum("svg5");
+}
+
+function renderStep6() {
+  const ok = state.checkResult.ok;
+
+  $("#step6").innerHTML = `
+    <div class="tag ${ok ? "blue" : "red"}">Schritt 7 · Decodierung</div>
+    <h1>${ok ? "Bits werden wieder zu Text" : "Keine Decodierung"}</h1>
+    <p class="lead">${ok ? "Wenn die Prüfung erfolgreich war, werden die Bits wieder in 8-Bit-Gruppen gelesen. Jede Gruppe wird zurück in ein Zeichen übersetzt." : "Wenn die Prüfung einen Fehler erkennt, werden die Nutzdaten nicht weiterverarbeitet. Das ist besser, als beschädigte Daten als richtige Nachricht zu behandeln."}</p>
+
+    ${renderFocusTriad(
+      ok ? "Die empfangenen Bits werden wieder als Zeichen interpretiert." : "Die beschädigten Bits werden nicht weiter interpretiert.",
+      ok ? "Der Empfänger soll wieder eine lesbare Nachricht erhalten." : "Fehlerhafte Daten sollen nicht fälschlich als korrekte Nachricht erscheinen.",
+      ok ? "Decodierung ist die Umkehrung der Codierung." : "Fehlerprüfung steht vor Weiterverarbeitung."
+    )}
+
+    <div class="two-col">
+      <div>
+        <div class="canvas">
+          <svg id="svg6" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="canvas-pill">${ok ? "Bits → Zeichen" : "Verworfen"}</div>
+        </div>
+
+        ${ok
+          ? `<div class="bits-view">${renderDecodeCards(state.decodingRows)}</div>`
+          : `<div class="explainer"><strong>Konsequenz</strong>Der Empfänger verwendet die Nutzdaten nicht weiter, weil die Fehlerprüfung angeschlagen hat.</div>`
+        }
+      </div>
+
+      <div class="info-stack">
+        <div class="status-card ${ok ? "ok" : "fail"}">
+          <strong>${ok ? "Decodierung möglich" : "Rahmen verworfen"}</strong>
+          <span>${ok ? `Decodierter Text: „${esc(state.decodedText)}“` : "Die Nachricht wird nicht angenommen."}</span>
+        </div>
+
+        <div class="definition">
+          <div class="small-label">Gemeinsame Regel</div>
+          <div class="definition-text">Codierung und Decodierung funktionieren nur, wenn Sender und Empfänger dieselbe Zuordnung von Zeichen und Bitmustern verwenden.</div>
+        </div>
+      </div>
+    </div>
+  `;
+  drawDecoding("svg6");
+}
+
+function renderStep7() {
+  const ok = state.checkResult.ok;
+
+  $("#step7").innerHTML = `
+    <div class="tag ${ok ? "teal" : "red"}">Schritt 8 · Ergebnis</div>
+    <h1>${ok ? "Nachricht angekommen" : "Nachricht nicht angenommen"}</h1>
+    <p class="lead">Am Ende wird sichtbar, warum mehrere Konzepte zusammengehören: Eine Nachricht muss codiert, verpackt, adressiert, übertragen, geprüft und wieder decodiert werden.</p>
+
+    ${renderFocusTriad(
+      ok ? `${state.receiver} kann die Nachricht lesen.` : `${state.receiver} verwirft den Rahmen.`,
+      ok ? "Alle Modellprüfungen waren erfolgreich." : "Die Prüfung hat eine Veränderung erkannt.",
+      "Zuverlässige Übertragung entsteht durch das Zusammenspiel mehrerer Aufgaben."
+    )}
+
+    <div class="two-col">
+      <div>
+        <div class="canvas">
+          <svg id="svg7" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="canvas-pill">Endzustand</div>
+        </div>
+      </div>
+
+      <div class="info-stack">
+        <div class="status-card ${ok ? "ok" : "fail"}">
+          <strong>${ok ? `${esc(state.receiver)} liest die Nachricht.` : "Die beschädigte Nachricht wird nicht verwendet."}</strong>
+          <span>${ok ? `„${esc(state.decodedText)}“` : "Die Fehlerprüfung hat eine Veränderung erkannt. Der Rahmen wird verworfen."}</span>
+        </div>
+
+        <div class="card data-card">
+          <h2>Sicherung des Ablaufs</h2>
+          <div class="kp-list">
+            <div class="kp"><div class="kp-num">1</div><div class="kp-text">Die Nachricht ist zunächst nur menschlich verständlicher Text.</div></div>
+            <div class="kp"><div class="kp-num">2</div><div class="kp-text">Durch Codierung entsteht daraus eine Bitfolge.</div></div>
+            <div class="kp"><div class="kp-num">3</div><div class="kp-text">Ein Rahmen ergänzt die Bitfolge um Steuerinformationen.</div></div>
+            <div class="kp"><div class="kp-num">4</div><div class="kp-text">Das Medium transportiert die Daten als Signale.</div></div>
+            <div class="kp"><div class="kp-num">5</div><div class="kp-text">Der Empfänger prüft Adresse und Prüfsumme und decodiert die Bits wieder zu Text.</div></div>
+          </div>
+        </div>
+
+        <div class="card data-card">
+          <h2>Beispielaufgabe</h2>
+          <p>
+            Warum reicht es nicht, nur die ursprüngliche Nachricht zu kennen?
+          </p>
+          <div class="kp-list" style="margin-top: 12px;">
+            <div class="kp">
+              <div class="kp-num">?</div>
+              <div class="kp-text">
+                Erkläre an diesem Beispiel, welche zusätzlichen Informationen und Regeln nötig sind, damit die Nachricht beim richtigen Gerät ankommt und dort sinnvoll verarbeitet werden kann.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="status-card neutral">
+          <strong>Erwartete Idee</strong>
+          <span>
+            Neben der Nachricht braucht man mindestens eine Codierung, eine Empfängerangabe, ein Übertragungsmedium und eine Prüfung, ob die Daten unterwegs verändert wurden.
+          </span>
+        </div>
+      </div>
+    </div>
+  `;
+  drawResult("svg7");
+}
+
+function renderStep8() {
+  $("#step8").innerHTML = `
+    <div class="tag green">Schritt 9 · Merkkasten</div>
+    <h1>Merkkasten: Datenübertragung im Schichtenmodell</h1>
+    <p class="lead">Diese Seite fasst den Ablauf kompakt für den Hefter zusammen. Man erkennt: Beim Sender wandert die Nachricht von oben nach unten durch die Schichten. Beim Empfänger wird sie von unten nach oben wieder zusammengesetzt.</p>
+
+    <div class="memo-grid">
+      <div class="memo-box">
+        <div class="memo-head">
+          <h2>Ablauf einer Nachricht</h2>
+        </div>
+
+        <div class="memo-body memo-flow">
+          <div class="flow-step">
+            <div>
+              <strong>Anwendungsschicht · Nachricht entsteht</strong>
+              <span>Der Absender formuliert eine Nachricht, zum Beispiel „${esc(state.message)}“. Für den Menschen ist sie verständlich, für das Netz aber noch nicht übertragbar.</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div>
+              <strong>Darstellung / Codierung · Text wird zu Bits</strong>
+              <span>Die Zeichen der Nachricht werden nach einer vereinbarten Regel in Zahlen und Bitfolgen übersetzt.</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div>
+              <strong>Sicherungsschicht · Rahmen wird gebildet</strong>
+              <span>Die Nutzdaten werden mit Zusatzinformationen ergänzt, zum Beispiel Absender, Empfänger, Länge und Prüfsumme.</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div>
+              <strong>Vermittlung / Adressierung · Ziel wird festgelegt</strong>
+              <span>Die Empfängerangabe sorgt dafür, dass die Daten dem richtigen Zielgerät zugeordnet werden können.</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div>
+              <strong>Bitübertragungsschicht · Signale laufen über das Medium</strong>
+              <span>Die Bits werden über ein Medium transportiert, zum Beispiel als elektrische Signale, Funkwellen oder Lichtimpulse.</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div>
+              <strong>Bitübertragungsschicht · Empfänger erhält Signale</strong>
+              <span>Beim Empfänger kommen die Signale an und werden wieder als Bitfolge betrachtet.</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div>
+              <strong>Sicherungsschicht · Rahmen wird geprüft</strong>
+              <span>Der Empfänger prüft, ob die Adresse passt und ob die Prüfsumme auf eine Veränderung der Nutzdaten hinweist.</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div>
+              <strong>Darstellung / Decodierung · Bits werden zu Zeichen</strong>
+              <span>Wenn die Prüfung erfolgreich war, werden die Bits wieder nach derselben Regel in Zeichen übersetzt.</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div>
+              <strong>Anwendungsschicht · Nachricht wird gelesen</strong>
+              <span>Am Ende liegt beim Empfänger wieder eine verständliche Nachricht vor.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="memo-box">
+        <div class="memo-head">
+          <h2>Von oben nach unten — und zurück</h2>
+        </div>
+
+        <div class="memo-body">
+          <div class="layer-row">
+            <strong>Sender</strong>
+            <span>Die Nachricht beginnt oben bei der Anwendung. Danach wird sie codiert, verpackt, adressiert und schließlich als Signal übertragen.</span>
+          </div>
+
+          <div class="layer-row">
+            <strong>Medium</strong>
+            <span>Das Medium transportiert nur Signale. Es versteht die Nachricht nicht und weiß nicht, was der Inhalt bedeutet.</span>
+          </div>
+
+          <div class="layer-row">
+            <strong>Empfänger</strong>
+            <span>Der Empfänger arbeitet den Weg umgekehrt ab: Signal empfangen, Rahmen prüfen, Nutzdaten entnehmen, Bits decodieren, Nachricht anzeigen.</span>
+          </div>
+
+          <div class="layer-row">
+            <strong>Wichtig</strong>
+            <span>Jede Schicht übernimmt eine eigene Aufgabe. Dadurch bleibt der Ablauf überschaubar und einzelne Aufgaben können getrennt betrachtet werden.</span>
+          </div>
+
+          <div class="status-card neutral">
+            <strong>Einordnung</strong>
+            <span>
+              Das ist ein vereinfachtes Unterrichtsmodell. Echte Rechnernetze arbeiten mit genauer definierten Schichten und Protokollen. Die Grundidee bleibt aber: Daten werden beim Sender schrittweise vorbereitet und beim Empfänger schrittweise wieder interpretiert.
+            </span>
+          </div>
+
+          <div class="definition">
+            <div class="small-label">Kernsatz</div>
+            <div class="definition-text">Beim Senden wandert eine Nachricht von der Anwendung zur Übertragung. Beim Empfangen wandert sie von der Übertragung zurück zur Anwendung.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+/* ============================================================
+   Render helpers
+   ============================================================ */
+
+function renderByteCards(rows) {
+  return rows.map(row => `
+    <div class="byte" title="${esc(row.note || "")}">
+      <div class="char">${esc(row.char)}</div>
+      <div class="bits">${esc(row.bits)}</div>
+      <div class="code">Zahl ${esc(row.code)}</div>
+    </div>
+  `).join("");
+}
+
+function renderDecodeCards(rows) {
+  return rows.map(row => `
+    <div class="byte">
+      <div class="bits">${esc(row.bits)}</div>
+      <div class="char">${esc(row.char)}</div>
+      <div class="code">Zahl ${esc(row.code)}</div>
+    </div>
+  `).join("");
+}
+
+function renderFrame(frame) {
+  return `
+    <div class="frame-shell">
+      <div class="frame-title">Modell-Rahmen</div>
+      <div class="frame-grid">
+        <div class="frame-field"><small>Typ</small><strong>${esc(frame.type)}</strong></div>
+        <div class="frame-field"><small>Absender</small><strong>${esc(frame.sender)}</strong></div>
+        <div class="frame-field"><small>Empfänger</small><strong>${esc(frame.receiver)}</strong></div>
+        <div class="frame-field"><small>Länge</small><strong>${frame.length} Bit</strong></div>
+        <div class="frame-field"><small>Prüfsumme</small><strong>${frame.checksum}</strong></div>
+      </div>
+      <div class="payload-box">
+        <small>Nutzdaten</small>
+        <div class="payload-bits">${esc(shorten(groupedBits(frame.payloadBits), 460))}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDeviceDecision(device) {
+  let cls = "ignore";
+  let text = "nicht gemeint, ignoriert den Rahmen";
+
+  if (device === state.sender) {
+    cls = "sender";
+    text = "Absender, nimmt die eigene Sendung nicht an";
+  } else if (device === state.receiver) {
+    cls = "accept";
+    text = "Empfängerangabe passt, nimmt den Rahmen an";
+  }
+
+  return `<div class="device-row ${cls}"><strong>${esc(device)}</strong><span>${esc(text)}</span></div>`;
+}
+
+function wireQuiz() {
+  $$(".quiz-card").forEach(card => {
+    card.addEventListener("click", () => {
+      if (state.quizAnswered) return;
+      state.quizAnswered = true;
+      card.classList.add(card.dataset.answer === "good" ? "good" : "bad");
+      $$(".quiz-card").forEach(other => {
+        if (other.dataset.answer === "good") other.classList.add("good");
+      });
+    });
+  });
+}
+
+/* ============================================================
+   SVG Drawing
+   ============================================================ */
+
+function createSvgEl(name, attrs = {}) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", name);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+function drawNetwork(svgId, opts = {}) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  svg.innerHTML = "";
+
+  const route = routeLinks();
+  const focusRoute = ["transmission", "addressing"].includes(opts.mode);
+
+  for (const [a, b] of LINKS) {
+    const pa = POS[a];
+    const pb = POS[b];
+
+    const line = createSvgEl("line", {
+      x1: pa.x,
+      y1: pa.y,
+      x2: pb.x,
+      y2: pb.y
+    });
+
+    line.classList.add("link");
+
+    const active = route.has(linkKey(a, b)) || route.has(linkKey(b, a));
+    if (focusRoute && active) line.classList.add("active");
+    if (opts.mode === "transmission" && active) line.classList.add("signal");
+    if (focusRoute && !active) line.classList.add("dim");
+
+    svg.appendChild(line);
+  }
+
+  for (const name of [...DEVICES, "SWITCH"]) {
+    drawNode(svg, name, opts);
+  }
+
+  if (opts.mode === "message") drawMessageBubble(svg);
+  if (opts.mode === "transmission") drawTransmissionPacket(svg);
+  if (opts.mode === "addressing") drawAddressingLabel(svg);
+}
+
+function drawNode(svg, name, opts = {}) {
+  const p = POS[name];
+  const g = createSvgEl("g");
+  g.classList.add("node");
+
+  if (name === state.sender || name === "SWITCH") g.classList.add("active");
+  if (opts.mode === "message" && name === state.receiver) g.classList.add("selected");
+  if (opts.mode === "addressing" && name === state.receiver) g.classList.add("accept");
+  if (opts.mode === "addressing" && DEVICES.includes(name) && name !== state.receiver && name !== state.sender) g.classList.add("ignore");
+
+  const infra = p.type === "switch";
+  const shape = createSvgEl(infra ? "rect" : "circle");
+  shape.classList.add("node-shape");
+
+  if (infra) {
+    shape.setAttribute("x", p.x - 60);
+    shape.setAttribute("y", p.y - 40);
+    shape.setAttribute("width", 120);
+    shape.setAttribute("height", 80);
+    shape.setAttribute("rx", 20);
+  } else {
+    shape.setAttribute("cx", p.x);
+    shape.setAttribute("cy", p.y);
+    shape.setAttribute("r", 48);
+  }
+
+  shape.setAttribute("fill", nodeFill(p.type));
+  shape.setAttribute("stroke", nodeStroke(p.type));
+  shape.setAttribute("stroke-width", "2");
+
+  const icon = createSvgEl("text", {
+    x: p.x,
+    y: p.y - 10,
+    fill: nodeStroke(p.type)
+  });
+  icon.classList.add("node-icon");
+  icon.textContent = nodeIcon(p.type);
+
+  const label = createSvgEl("text", { x: p.x, y: p.y + 10 });
+  label.classList.add("node-label");
+  label.textContent = name;
+
+  const sub = createSvgEl("text", { x: p.x, y: p.y + 28 });
+  sub.classList.add("node-sub");
+  sub.textContent = p.sub;
+
+  g.appendChild(shape);
+  g.appendChild(icon);
+  g.appendChild(label);
+  g.appendChild(sub);
+  svg.appendChild(g);
+}
+
+function drawMessageBubble(svg) {
+  const s = POS[state.sender];
+  const r = POS[state.receiver];
+  const midX = (s.x + r.x) / 2;
+  const y = 60;
+
+  const bubble = createSvgEl("rect", {
+    x: midX - 150,
+    y,
+    width: 300,
+    height: 62,
+    rx: 18,
+    fill: "#fff",
+    stroke: "#d9d5ca",
+    "stroke-width": 2
+  });
+
+  const text = createSvgEl("text", {
+    x: midX,
+    y: y + 38,
+    "text-anchor": "middle",
+    fill: "#1b1813",
+    "font-size": 18,
+    "font-weight": 900
+  });
+
+  text.textContent = `„${shorten(state.message, 20)}“`;
+
+  svg.appendChild(bubble);
+  svg.appendChild(text);
+}
+
+function drawTransmissionPacket(svg) {
+  const s = POS[state.sender];
+  const sw = POS.SWITCH;
+  const r = POS[state.receiver];
+
+  const points = [
+    { x: s.x, y: s.y },
+    { x: sw.x, y: sw.y },
+    { x: r.x, y: r.y }
+  ];
+
+  const g = createSvgEl("g");
+  g.classList.add("packet");
+  if (state.disturbanceInfo) g.classList.add("error");
+
+  const rect = createSvgEl("rect", { x: -44, y: -20, width: 88, height: 40, rx: 13 });
+  const text = createSvgEl("text", { x: 0, y: 5 });
+  text.textContent = state.disturbanceInfo ? "FEHLER" : "RAHMEN";
+
+  g.appendChild(rect);
+  g.appendChild(text);
+
+  const path = `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y} L ${points[2].x} ${points[2].y}`;
+  const animate = createSvgEl("animateMotion", {
+    dur: "3.1s",
+    repeatCount: "indefinite",
+    path
+  });
+
+  g.appendChild(animate);
+  svg.appendChild(g);
+
+  drawBitPreview(svg, 160, 382);
+}
+
+function drawBitPreview(svg, x, y) {
+  const bits = state.transmittedFrame.payloadBits.slice(0, 34);
+
+  for (let i = 0; i < bits.length; i++) {
+    const bx = x + i * 17;
+    const changed = state.disturbanceInfo && state.disturbanceInfo.position === i;
+
+    const rect = createSvgEl("rect", {
+      x: bx - 7,
+      y: y - 13,
+      width: 14,
+      height: 24,
+      rx: 5,
+      fill: changed ? "#fdeaea" : bits[i] === "1" ? "#e8f8f0" : "#eceae4",
+      stroke: changed ? "#c13030" : bits[i] === "1" ? "#1a7a4a" : "#c8c3b8"
+    });
+
+    const t = createSvgEl("text", {
+      x: bx,
+      y: y + 5,
+      class: "bit-dot",
+      fill: changed ? "#c13030" : "#1b1813"
+    });
+
+    t.textContent = bits[i];
+
+    svg.appendChild(rect);
+    svg.appendChild(t);
+  }
+
+  const label = createSvgEl("text", {
+    x: 450,
+    y: y + 42,
+    "text-anchor": "middle",
+    fill: "#7d786d",
+    "font-size": 12,
+    "font-weight": 700
+  });
+
+  label.textContent = "Ausschnitt aus dem übertragenen Bitstrom";
+  svg.appendChild(label);
+}
+
+function drawAddressingLabel(svg) {
+  const rect = createSvgEl("rect", {
+    x: 285,
+    y: 28,
+    width: 330,
+    height: 48,
+    rx: 18,
+    fill: "#fff",
+    stroke: "#d9d5ca",
+    "stroke-width": 2
+  });
+
+  const text = createSvgEl("text", {
+    x: 450,
+    y: 58,
+    "text-anchor": "middle",
+    fill: "#0e7c6a",
+    "font-size": 15,
+    "font-weight": 900
+  });
+
+  text.textContent = `Im Rahmen steht: Empfänger = ${state.receiver}`;
+
+  svg.appendChild(rect);
+  svg.appendChild(text);
+}
+
+function drawEncoding(svgId) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  svg.innerHTML = "";
+
+  const rows = state.encodingRows.slice(0, 6);
+  const startY = 70;
+
+  const title = createSvgEl("text", {
+    x: 450,
+    y: 38,
+    "text-anchor": "middle",
+    fill: "#1b1813",
+    "font-size": 17,
+    "font-weight": 900
+  });
+  title.textContent = "Zeichen → Zahl → 8 Bit";
+  svg.appendChild(title);
+
+  rows.forEach((row, i) => {
+    const y = startY + i * 55;
+    drawBox(svg, 120, y, 120, 38, row.char, "#fff", "#d9d5ca");
+    drawArrow(svg, 255, y + 19, 320, y + 19);
+    drawBox(svg, 335, y, 120, 38, String(row.code), "#fbfaf7", "#d9d5ca");
+    drawArrow(svg, 470, y + 19, 535, y + 19);
+    drawBox(svg, 550, y, 170, 38, row.bits, "#eaf1ff", "#c7d8ff", true);
+  });
+
+  if (state.encodingRows.length > 6) {
+    const t = createSvgEl("text", {
+      x: 450,
+      y: 420,
+      "text-anchor": "middle",
+      fill: "#7d786d",
+      "font-size": 13,
+      "font-weight": 700
+    });
+    t.textContent = "Weitere Zeichen stehen unter der Visualisierung als Bitkarten.";
+    svg.appendChild(t);
+  }
+}
+
+function drawChecksum(svgId) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  svg.innerHTML = "";
+
+  const ok = state.checkResult.ok;
+  const color = ok ? "#1a7a4a" : "#c13030";
+
+  drawBox(svg, 135, 142, 230, 128, `mitgesendet\n${state.checkResult.sentChecksum}`, "#fff", "#d9d5ca");
+  drawBox(svg, 535, 142, 230, 128, `neu berechnet\n${state.checkResult.newChecksum}`, "#fff", "#d9d5ca");
+
+  const symbol = createSvgEl("text", {
+    x: 450,
+    y: 223,
+    "text-anchor": "middle",
+    fill: color,
+    "font-size": 48,
+    "font-weight": 900
+  });
+  symbol.textContent = ok ? "=" : "≠";
+  svg.appendChild(symbol);
+
+  const rect = createSvgEl("rect", {
+    x: 255,
+    y: 325,
+    width: 390,
+    height: 64,
+    rx: 22,
+    fill: ok ? "#e8f8f0" : "#fdeaea",
+    stroke: color,
+    "stroke-width": 2
+  });
+
+  const text = createSvgEl("text", {
+    x: 450,
+    y: 364,
+    "text-anchor": "middle",
+    fill: color,
+    "font-size": 17,
+    "font-weight": 900
+  });
+  text.textContent = ok ? "OK: kein Fehler erkannt" : "FEHLER: Rahmen wird verworfen";
+
+  svg.appendChild(rect);
+  svg.appendChild(text);
+}
+
+function drawDecoding(svgId) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  svg.innerHTML = "";
+
+  if (!state.checkResult.ok) {
+    const circle = createSvgEl("circle", {
+      cx: 450,
+      cy: 185,
+      r: 75,
+      fill: "#fdeaea",
+      stroke: "#c13030",
+      "stroke-width": 3
+    });
+
+    const x = createSvgEl("text", {
+      x: 450,
+      y: 207,
+      "text-anchor": "middle",
+      fill: "#c13030",
+      "font-size": 62,
+      "font-weight": 900
+    });
+    x.textContent = "×";
+
+    const t = createSvgEl("text", {
+      x: 450,
+      y: 305,
+      "text-anchor": "middle",
+      fill: "#4d4940",
+      "font-size": 16,
+      "font-weight": 800
+    });
+    t.textContent = "Keine Decodierung: Der Rahmen wurde verworfen.";
+
+    svg.appendChild(circle);
+    svg.appendChild(x);
+    svg.appendChild(t);
+    return;
+  }
+
+  const rows = state.decodingRows.slice(0, 6);
+  const startY = 70;
+
+  const title = createSvgEl("text", {
+    x: 450,
+    y: 38,
+    "text-anchor": "middle",
+    fill: "#1b1813",
+    "font-size": 17,
+    "font-weight": 900
+  });
+  title.textContent = "8 Bit → Zahl → Zeichen";
+  svg.appendChild(title);
+
+  rows.forEach((row, i) => {
+    const y = startY + i * 55;
+    drawBox(svg, 120, y, 170, 38, row.bits, "#eaf1ff", "#c7d8ff", true);
+    drawArrow(svg, 305, y + 19, 370, y + 19);
+    drawBox(svg, 385, y, 120, 38, String(row.code), "#fbfaf7", "#d9d5ca");
+    drawArrow(svg, 520, y + 19, 585, y + 19);
+    drawBox(svg, 600, y, 120, 38, row.char, "#fff", "#d9d5ca");
+  });
+
+  const rect = createSvgEl("rect", {
+    x: 185,
+    y: 380,
+    width: 530,
+    height: 52,
+    rx: 18,
+    fill: "#e8f8f0",
+    stroke: "#b8ddc8",
+    "stroke-width": 2
+  });
+
+  const text = createSvgEl("text", {
+    x: 450,
+    y: 413,
+    "text-anchor": "middle",
+    fill: "#1a7a4a",
+    "font-size": 17,
+    "font-weight": 900
+  });
+  text.textContent = `Decodierter Text: „${shorten(state.decodedText, 30)}“`;
+
+  svg.appendChild(rect);
+  svg.appendChild(text);
+}
+
+function drawResult(svgId) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  svg.innerHTML = "";
+
+  drawNetwork(svgId, { mode: "addressing" });
+
+  const ok = state.checkResult.ok;
+  const color = ok ? "#1a7a4a" : "#c13030";
+  const fill = ok ? "#e8f8f0" : "#fdeaea";
+  const icon = ok ? "✓" : "×";
+  const headline = ok ? `${state.receiver} liest:` : "Nachricht nicht angenommen";
+  const body = ok ? `„${shorten(state.decodedText, 24)}“` : "Fehler erkannt";
+
+  const rect = createSvgEl("rect", {
+    x: 250,
+    y: 30,
+    width: 400,
+    height: 112,
+    rx: 28,
+    fill,
+    stroke: color,
+    "stroke-width": 3
+  });
+
+  const i = createSvgEl("text", {
+    x: 300,
+    y: 100,
+    "text-anchor": "middle",
+    fill: color,
+    "font-size": 46,
+    "font-weight": 900
+  });
+  i.textContent = icon;
+
+  const h = createSvgEl("text", {
+    x: 470,
+    y: 76,
+    "text-anchor": "middle",
+    fill: color,
+    "font-size": 16,
+    "font-weight": 900
+  });
+  h.textContent = headline;
+
+  const b = createSvgEl("text", {
+    x: 470,
+    y: 107,
+    "text-anchor": "middle",
+    fill: "#1b1813",
+    "font-size": 19,
+    "font-weight": 900
+  });
+  b.textContent = body;
+
+  svg.appendChild(rect);
+  svg.appendChild(i);
+  svg.appendChild(h);
+  svg.appendChild(b);
+}
+
+function drawBox(svg, x, y, w, h, text, fill, stroke, mono = false) {
+  const rect = createSvgEl("rect", {
+    x,
+    y,
+    width: w,
+    height: h,
+    rx: 13,
+    fill,
+    stroke,
+    "stroke-width": 2
+  });
+  svg.appendChild(rect);
+
+  const lines = String(text).split("\n");
+
+  lines.forEach((line, idx) => {
+    const t = createSvgEl("text", {
+      x: x + w / 2,
+      y: y + h / 2 + (idx - (lines.length - 1) / 2) * 18 + 5,
+      "text-anchor": "middle",
+      fill: idx === 0 && lines.length > 1 ? "#7d786d" : "#1b1813",
+      "font-size": idx === 0 && lines.length > 1 ? 12 : 14,
+      "font-weight": 900,
+      "font-family": mono
+        ? "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        : "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
+    });
+
+    t.textContent = line;
+    svg.appendChild(t);
+  });
+}
+
+function drawArrow(svg, x1, y1, x2, y2) {
+  const defs = svg.querySelector("defs") || createSvgEl("defs");
+
+  if (!svg.querySelector("#arrowHead")) {
+    const marker = createSvgEl("marker", {
+      id: "arrowHead",
+      markerWidth: 10,
+      markerHeight: 10,
+      refX: 8,
+      refY: 3,
+      orient: "auto",
+      markerUnits: "strokeWidth"
+    });
+
+    const path = createSvgEl("path", {
+      d: "M0,0 L0,6 L9,3 z",
+      fill: "#c8c3b8"
+    });
+
+    marker.appendChild(path);
+    defs.appendChild(marker);
+    svg.prepend(defs);
+  }
+
+  const line = createSvgEl("line", {
+    x1,
+    y1,
+    x2,
+    y2,
+    stroke: "#c8c3b8",
+    "stroke-width": 3,
+    "stroke-linecap": "round",
+    "marker-end": "url(#arrowHead)"
+  });
+
+  svg.appendChild(line);
+}
+
+function nodeFill(type) {
+  return {
+    pc: "#eff6ff",
+    server: "#f0fdf4",
+    switch: "#f0eaff",
+    printer: "#fff3e3",
+    tablet: "#ecfeff"
+  }[type] || "#f8fafc";
+}
+
+function nodeStroke(type) {
+  return {
+    pc: "#2563eb",
+    server: "#1a7a4a",
+    switch: "#6b3db5",
+    printer: "#c96a00",
+    tablet: "#0891b2"
+  }[type] || "#94a3b8";
+}
+
+function nodeIcon(type) {
+  return {
+    pc: "PC",
+    server: "SRV",
+    switch: "SW",
+    printer: "PR",
+    tablet: "TAB"
+  }[type] || "●";
+}
+</script>
+</body>
+</html>
